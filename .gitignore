@@ -1,2 +1,4 @@
 conda
 .idea/
+venv
+__pycache__
