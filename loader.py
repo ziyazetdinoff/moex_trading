@@ -1,21 +1,32 @@
 import yfinance as yf
 import pandas as pd
+import requests
+import apimoex
+import asyncio
+import asyncio
+
+import aiohttp
+
+import aiomoex
+import pandas as pd
 
 
-''' class Stock(name="", from_date="", to_date=""):
-    def __init__ (self):
-        self.data = yf.download(name, from_date, to_date)
-'''
+async def main():
+    request_url = "https://iss.moex.com/iss/engines/stock/" "markets/shares/boards/TQBR/securities.json"
+    arguments = {"securities.columns": ("SECID," "REGNUMBER," "LOTSIZE," "SHORTNAME")}
+
+    async with aiohttp.ClientSession() as session:
+        iss = aiomoex.ISSClient(session, request_url, arguments)
+        data = await iss.get()
+        df = pd.DataFrame(data["securities"])
+        df.set_index("SECID", inplace=True)
+        print(df.head(), "\n")
+        print(df.tail(), "\n")
+        df.info()
 
 
-data = yf.download('TTLK.ME', '2022-01-01', '2022-02-01')
-pd.set_option("display.max.columns", None)
-print(data.head(3))
-mas = []
-print("---------------")
-# for i in range(6):
- #   mas.append(data.iloc[0][i])
-print(data.iloc[:, 0])
-print(data.axes[0])
+asyncio.run(main())
+
+
 
 
