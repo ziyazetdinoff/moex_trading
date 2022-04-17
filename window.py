@@ -10,9 +10,9 @@ class App(tk.Tk):
         self['background'] = '#EBEBEB'
         self.geometry("800x600+300+200")
         self.resizable(False, True)
-        self.frame_add_stock = tk.Frame(self, bg='#BEBEBE', width=570)
-        self.frame_stat = tk.Frame(self, bg='purple', width=230)
-        self.frame_db = tk.Frame(self, bg='yellow', width=800, height=460)
+        self.frame_add_stock = tk.Frame(self, width=570)
+        self.frame_stat = tk.Frame(self, width=230)
+        self.frame_db = tk.Frame(self, width=800, height=460)
         self.flag_all_period = tk.StringVar()
         self.run()
 
@@ -25,7 +25,7 @@ class App(tk.Tk):
     def put_frames(self):
         self.frame_add_stock.grid(row=0, column=0, sticky='nswe')
         self.frame_stat.grid(row=0, column=1, sticky='nwse')
-        self.frame_db.grid(row=1, column=0, columnspan=2, sticky='ns')
+        self.frame_db.grid(row=1, column=0, columnspan=2, sticky='nswe')
 
     def widgets_add_stock_frame(self):
         l_pick_stock = tk.Label(self.frame_add_stock, text='Выбор акции:')
@@ -66,11 +66,11 @@ class App(tk.Tk):
         table = ttk.Treeview(self.frame_db, yscrollcommand=table_scroll.set)
         table['columns'] = ['id', 'stock_name', 'all_period', 'from_date', 'to_date']
         table.column("#0", width=0, stretch=tk.NO)
-        table.column("id", anchor=tk.CENTER)
-        table.column("stock_name", anchor=tk.CENTER)
-        table.column("all_period", anchor=tk.CENTER)
-        table.column("from_date", anchor=tk.CENTER)
-        table.column("to_date", anchor=tk.CENTER)
+        table.column("id", anchor=tk.CENTER, width=40)
+        table.column("stock_name", anchor=tk.CENTER, width=180)
+        table.column("all_period", anchor=tk.CENTER, width=200)
+        table.column("from_date", anchor=tk.CENTER, width=200)
+        table.column("to_date", anchor=tk.CENTER, width=220)
 
         # Create Headings
         table.heading("#0", text="", anchor=tk.CENTER)
@@ -79,8 +79,9 @@ class App(tk.Tk):
         table.heading("all_period", text="all_period", anchor=tk.CENTER)
         table.heading("from_date", text="from_date", anchor=tk.CENTER)
         table.heading("to_date", text="to_date", anchor=tk.CENTER)
-        table.pack(expand=True, fill=tk.BOTH)
+        table.pack()
         table_scroll.config(command=table.yview)
+
 
 
 
