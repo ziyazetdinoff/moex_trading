@@ -1,7 +1,7 @@
 import yfinance as yf
-import pandas as pd
 import requests
 import apimoex
+import collections
 
 import datetime
 
@@ -32,7 +32,8 @@ def form_dict_of_stocks() -> dict:
         if x['ticker'] not in dict_stocks:
             mas = [x['from'], x['till']]
             dict_stocks[x['ticker']] = mas
-    return dict_stocks
+    sorted_dict_stocks = collections.OrderedDict(sorted(dict_stocks.items()))
+    return sorted_dict_stocks
 
 
 def download_stock(name: str, from_date: datetime.date, to_date: datetime.date) -> list:
@@ -42,8 +43,6 @@ def download_stock(name: str, from_date: datetime.date, to_date: datetime.date) 
         mas[i][0] = mas[i][0].to_pydatetime().date()
         mas[i][0] = mas[i][0].isoformat()
     return mas
-
-
 
 
 
