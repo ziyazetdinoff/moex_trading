@@ -2,6 +2,7 @@ import yfinance as yf
 import requests
 import apimoex
 import collections
+import yfinance.shared as shared
 
 import datetime
 
@@ -37,11 +38,15 @@ def form_dict_of_stocks() -> dict:
 
 
 def download_stock(name: str, from_date: datetime.date, to_date: datetime.date) -> list:
+    flag = True
     data = yf.download(name + '.ME', from_date, to_date)
+    if len(list(shared._ERRORS.keys())) != 0:
+        flag = False
     mas = [data.columns.tolist()] + data.reset_index().values.tolist()
     for i in range(1, len(mas)):
         mas[i][0] = mas[i][0].to_pydatetime().date()
         mas[i][0] = mas[i][0].isoformat()
+    mas.append(flag)
     return mas
 
 

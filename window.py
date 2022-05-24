@@ -4,6 +4,10 @@ import tkinter.messagebox as mb
 from tkcalendar import DateEntry, Calendar
 import pandas as pd
 import datetime
+import time
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import db_maker as dbm
 
@@ -167,12 +171,15 @@ class App(tk.Tk):
                 self.set_begin_end()
                 self.warning()
             else:
-                dbm.add_to_db(self.name_of_stock,
-                              bool(self.flag_all_period.get()),
-                              self.first_date,
-                              self.second_date)
-            self.list_database = dbm.get_current_list_database()
-            self.table.insert('', tk.END, values=self.list_database[-1])
+                answer = dbm.add_to_db(self.name_of_stock,
+                                       bool(self.flag_all_period.get()),
+                                       self.first_date,
+                                       self.second_date)
+                if answer is False:
+                    mb.showwarning('Внимание', 'Данные по акции не скачались')
+                else:
+                    self.list_database = dbm.get_current_list_database()
+                    self.table.insert('', tk.END, values=self.list_database[-1])
         else:
             warning = 'Выберите акцию'
             mb.showwarning('Внимание', warning)
@@ -187,14 +194,13 @@ class App(tk.Tk):
     def deleting(self):
         for i in self.table.get_children():
             self.table.delete(i)
-        self.cb_pick_stock.configure(values=[])
         dbm.delete_tables()
         dbm.create_db()
 
     def widgets_stat_frame(self):
         l_graphic = tk.Label(self.frame_stat, text='Получение отчётов')
         btn_stat_cost = tk.Button(self.frame_stat, text='Динамика стоимости', command=self.new_window_cost)
-        btn_stat_profit = tk.Button(self.frame_stat, text='Динамика доходности')
+        btn_stat_profit = tk.Button(self.frame_stat, text='Динамика доходности', command=self.new_window_profit)
 
         l_graphic.pack(padx=10, pady=12)
         btn_stat_cost.pack(padx=10, pady=10)
@@ -237,61 +243,135 @@ class App(tk.Tk):
         window = WindowCost(self)
         window.grab_set()
 
+    def new_window_profit(self):
+        window = WindowProfit(self)
+        window.grab_set()
+
 
 class WindowCost(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title('Динамика стоимости')
         self['background'] = '#EBEBEB'
-        self.geometry("600x400+200+200")
+        self.geometry("700x400+200+200")
         self.resizable(False, False)
 
         self.frame_settings = tk.Frame(self)
         self.frame_graphic = tk.Frame(self)
+        self.flag_download = False
 
         self.frame_settings.pack(side='left', fill='y')
         self.frame_graphic.pack(side='right')
         self.widgets_settings()
 
     def widgets_settings(self):
-        self.x = tk.IntVar()
-        self.x.set(0)
-        self.y = tk.IntVar()
-        self.y.set(0)
-
-        tk.Label(self.frame_settings, text='Дата:').grid(row=0, column=0, columnspan=2)
-        self.rdbtn_day = ttk.Radiobutton(self.frame_settings, text='День', value=1, variable=self.x)
-        self.rdbtn_week = ttk.Radiobutton(self.frame_settings, text='Неделя', value=2, variable=self.x)
-        self.rdbtn_month = ttk.Radiobutton(self.frame_settings, text='Месяц', value=3, variable=self.x)
-        self.rdbtn_year = ttk.Radiobutton(self.frame_settings, text='Год', value=4, variable=self.x)
-        tk.Label(self.frame_settings, text='Цена:').grid(row=3, column=0, columnspan=2)
-        self.rdbtn_open = ttk.Radiobutton(self.frame_settings, text='Открытия', value=1, variable=self.y)
-        self.rdbtn_close = ttk.Radiobutton(self.frame_settings, text='Закрытия', value=2, variable=self.y)
-        self.rdbtn_low = ttk.Radiobutton(self.frame_settings, text='Минимальная', value=3, variable=self.y)
-        self.rdbtn_high = ttk.Radiobutton(self.frame_settings, text='Максимальная', value=4, variable=self.y)
         self.btn_graphic = tk.Button(self.frame_settings, text='График', command=self.draw)
-        self.btn_excel = tk.Button(self.frame_settings, text='Скачать excel')
+        self.btn_excel = tk.Button(self.frame_settings, text='Скачать в excel', command=self.excel)
 
-        self.rdbtn_day.grid(row=1, column=0, padx=10, pady=10, sticky='we')
-        self.rdbtn_week.grid(row=1, column=1, padx=10, pady=10, sticky='we')
-        self.rdbtn_month.grid(row=2, column=0, padx=10, pady=10, sticky='we')
-        self.rdbtn_year.grid(row=2, column=1, padx=10, pady=10, sticky='we')
-        self.rdbtn_open.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='nswe')
-        self.rdbtn_close.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='nswe')
-        self.rdbtn_low.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky='nswe')
-        self.rdbtn_high.grid(row=7, column=0, columnspan=2, padx=10, pady=10, sticky='nswe')
-        self.btn_graphic.grid(row=8, column=0, columnspan=2, padx=10, pady=10, sticky='we')
-        self.btn_excel.grid(row=9, column=0, columnspan=2, padx=10, pady=10, sticky='we')
+        self.btn_graphic.grid(row=0, column=0, padx=10, pady=10, sticky='we')
+        self.btn_excel.grid(row=1, column=0, padx=10, pady=10, sticky='we')
+
+    def widget_fraphic(self):
+        pass
+        '''self.lf = ttk.Labelframe(self.frame_graphic, text='График')
+        self.lf.grid(row=0, column=0, sticky='nswe', padx=5, pady=5)'''
 
     def draw(self):
-        if self.x.get() == self.y.get() == 0:
-            mb.showwarning('Внимание', 'Выберите систему координат')
-        elif self.x.get() * self.y.get() != 0:
-            self.list_tradings = dbm.get_current_list_tradings()
-            self.df = pd.DataFrame(self.list_tradings)
+        self.dict_tradings = dbm.get_current_dict_tradings()
+        self.flag_download = True
+        self.df = pd.DataFrame(self.dict_tradings)
+
+        fig = plt.Figure(figsize=(5.5, 4), dpi=100)
+        ax = fig.add_subplot(111)
+        line = FigureCanvasTkAgg(fig, master=self.frame_graphic)
+        line.get_tk_widget().grid(row=0, column=0)
+
+        self.df.plot(x='Date', y=self.df.axes[1][1:], ax=ax, kind='line')
+
+    def excel(self):
+        if not self.flag_download:
+            mb.showwarning('Внимание', 'Нажмите на кнопку "График" перед тем как скачать отчёт')
+        else:
+            self.df.to_excel("output.xlsx")
+            progress_bar = ttk.Progressbar(self.frame_settings,
+                                           orient='horizontal',
+                                           mode='determinate',
+                                           maximum=100,
+                                           value=0)
+            label = tk.Label(self.frame_settings, text='Загрузка')
+
+            label.grid(row=2, column=0, padx=10, pady=10, sticky='we')
+            progress_bar.grid(row=3, column=0, padx=10, pady=10, sticky='we')
+            self.update()
+            progress_bar['value'] = 0
+            self.update()
+            while progress_bar['value'] < 100:
+                progress_bar['value'] += 5
+                self.update()
+                time.sleep(0.1)
 
 
+class WindowProfit(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title('Динамика стоимости')
+        self['background'] = '#EBEBEB'
+        self.geometry("700x400+200+200")
+        self.resizable(False, False)
 
+        self.frame_settings = tk.Frame(self)
+        self.frame_graphic = tk.Frame(self)
+        self.flag_download = False
+
+        self.frame_settings.pack(side='left', fill='y')
+        self.frame_graphic.pack(side='right')
+        self.widgets_settings()
+
+    def widgets_settings(self):
+        self.btn_graphic = tk.Button(self.frame_settings, text='График', command=self.draw)
+        self.btn_excel = tk.Button(self.frame_settings, text='Скачать в excel', command=self.excel)
+
+        self.btn_graphic.grid(row=0, column=0, padx=10, pady=10, sticky='we')
+        self.btn_excel.grid(row=1, column=0, padx=10, pady=10, sticky='we')
+
+    def widget_fraphic(self):
+        pass
+        '''self.lf = ttk.Labelframe(self.frame_graphic, text='График')
+        self.lf.grid(row=0, column=0, sticky='nswe', padx=5, pady=5)'''
+
+    def draw(self):
+        self.dict_tradings_profit = dbm.get_tradings_profit()
+        self.flag_download = True
+        self.df = pd.DataFrame(self.dict_tradings_profit)
+
+        fig = plt.Figure(figsize=(5.5, 4), dpi=100)
+        ax = fig.add_subplot(111)
+        line = FigureCanvasTkAgg(fig, master=self.frame_graphic)
+        line.get_tk_widget().grid(row=0, column=0)
+
+        self.df.plot(x='Date', y=self.df.axes[1][1:], ax=ax, kind='line')
+
+    def excel(self):
+        if not self.flag_download:
+            mb.showwarning('Внимание', 'Нажмите на кнопку "График" перед тем как скачать отчёт')
+        else:
+            self.df.to_excel("output.xlsx")
+            progress_bar = ttk.Progressbar(self.frame_settings,
+                                           orient='horizontal',
+                                           mode='determinate',
+                                           maximum=100,
+                                           value=0)
+            label = tk.Label(self.frame_settings, text='Загрузка')
+
+            label.grid(row=2, column=0, padx=10, pady=10, sticky='we')
+            progress_bar.grid(row=3, column=0, padx=10, pady=10, sticky='we')
+            self.update()
+            progress_bar['value'] = 0
+            self.update()
+            while progress_bar['value'] < 100:
+                progress_bar['value'] += 5
+                self.update()
+                time.sleep(0.1)
 
 
 def create_app():

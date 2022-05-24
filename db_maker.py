@@ -137,6 +137,7 @@ def get_begin_end_date(name_of_stock: str):
 
 
 def get_current_list_database():
+    session.commit()
     result = session.query(Database).all()
     mas = []
     for x in result:
@@ -151,33 +152,90 @@ def get_current_list_database():
     return mas
 
 
-def get_current_list_tradings():
+def get_current_dict_tradings():
     result = session.query(Trading).all()
     mas = []
+    mas_stock = []
     for x in result:
         q = x.__dict__
         lst = list()
         lst.append(q['id'])
         lst.append(q['name_st'])
         lst.append(q['all_period_st'])
-        lst.append(q['date'].isoformat())
+        lst.append(q['date'])
         lst.append(q['open'])
         lst.append(q['high'])
         lst.append(q['low'])
         lst.append(q['close'])
         if lst not in mas:
             mas.append(lst)
-    return mas
+        if q['name_st'] not in mas_stock:
+            mas_stock.append(q['name_st'])
+    dct = dict()
+    dct['Date'] = []
+    for i in range(len(mas)):
+        if mas[i][3] not in dct['Date']:
+            dct['Date'].append(mas[i][3])
+    dct['Date'].sort()
+    for x in mas_stock:
+        dct[x] = [None] * len(dct['Date'])
+    for x in mas:
+        dct[x[1]][dct['Date'].index(x[3])] = x[4]
+    session.commit()
+    return dct
+
+
+def get_tradings_profit():
+    result = session.query(Trading).all()
+    mas = []
+    mas_stock = []
+    for x in result:
+        q = x.__dict__
+        lst = list()
+        lst.append(q['id'])
+        lst.append(q['name_st'])
+        lst.append(q['all_period_st'])
+        lst.append(q['date'])
+        lst.append(q['close'])
+        if lst not in mas:
+            mas.append(lst)
+        if q['name_st'] not in mas_stock:
+            mas_stock.append(q['name_st'])
+    dct = dict()
+    dct['Date'] = []
+    for i in range(len(mas)):
+        if mas[i][3] not in dct['Date']:
+            dct['Date'].append(mas[i][3])
+    dct['Date'].sort()
+    for x in mas_stock:
+        dct[x] = [None] * len(dct['Date'])
+    for x in mas:
+        dct[x[1]][dct['Date'].index(x[3])] = x[4]
+    for key in dct:
+        if key != 'Date':
+            for i in range(len(dct[key])):
+                if i == 0 or (i > 1 and dct[key][i - 1] is None and dct[key][i] is not None):
+                    first_point = dct[key][i]
+                else:
+                    if dct[key][i] is not None:
+                        dct[key][i] -= first_point
+    session.commit()
+    return dct
 
 
 def add_to_db(name: str, all_period: bool, from_date: datetime.date, to_date: datetime.date):
-    session.add(Database(name=name, all_period=all_period, from_date=from_date, till_date=to_date))
-    session.commit()
-    add_to_tradings(name, all_period, from_date, to_date)
-
-
-def add_to_tradings(name: str, all_period: bool, from_date: datetime.date, to_date: datetime.date):
     mas = loader.download_stock(name, from_date, to_date)
+    if mas[-1] is False:
+        return False
+    else:
+        session.add(Database(name=name, all_period=all_period, from_date=from_date, till_date=to_date))
+        session.commit()
+        del mas[-1]
+        add_to_tradings(name, all_period, mas)
+        return True
+
+
+def add_to_tradings(name: str, all_period: bool, mas):
     for i in range(1, len(mas)):
         session.add(Trading(name_st=name,
                             all_period_st=all_period,
@@ -206,7 +264,7 @@ def actualize():
                 session.commit()
 
 
-
+# get_tradings_profit()
 
 
 

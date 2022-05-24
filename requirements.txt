@@ -3,3 +3,5 @@ pymysql
 cryptography
 apimoex
 requests
+matplotlib
+openpyxl
