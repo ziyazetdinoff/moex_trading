@@ -53,4 +53,3 @@ def download_stock(name: str, from_date: datetime.date, to_date: datetime.date) 
 
 
 
-

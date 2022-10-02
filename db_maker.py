@@ -2,11 +2,10 @@ from sqlalchemy import Column, Integer, Float, Date, Boolean, String, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import delete
-from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils import create_database, database_exists
 import datetime
-import os
 import loader
+import parameters
 
 base = declarative_base()
 
@@ -83,15 +82,21 @@ class Trading(base):
                f" close={self.close},"
 
 
-user = os.environ['user']
-password = os.environ['password']
-path = os.environ['path']
-name_of_db = 'test'
+user = parameters.user
+password = parameters.password
+name_of_db = parameters.name
+ip = parameters.ip
+port = parameters.port
 
 # Подключаемся к БД
 # СУБД+драйвер://юзер:пароль@хост:порт/база
-connection_string = f'mysql+pymysql://{user}:{password}@localhost:3306/{name_of_db}'
-engine = create_engine(connection_string, echo=True)
+connection_string = f'postgresql+psycopg2://{user}:{password}@{ip}:{port}/{name_of_db}'
+engine = create_engine(connection_string, echo=False)
+if database_exists(connection_string):
+    print(f'Database exists: {database_exists(engine.url)}')
+else:
+    create_database(engine.url)
+    print(f'Database created: {database_exists(engine.url)}')
 # Session = sessionmaker(bind=engine, autoflush=False)
 session = Session(bind=engine, autoflush=False)
 
@@ -216,6 +221,7 @@ def get_tradings_profit():
             for i in range(len(dct[key])):
                 if i == 0 or (i > 1 and dct[key][i - 1] is None and dct[key][i] is not None):
                     first_point = dct[key][i]
+                    dct[key][i] = 0
                 else:
                     if dct[key][i] is not None:
                         dct[key][i] -= first_point
@@ -231,11 +237,13 @@ def add_to_db(name: str, all_period: bool, from_date: datetime.date, to_date: da
         session.add(Database(name=name, all_period=all_period, from_date=from_date, till_date=to_date))
         session.commit()
         del mas[-1]
-        add_to_tradings(name, all_period, mas)
+        add_to_tradings(name, all_period, from_date, to_date)
         return True
 
 
-def add_to_tradings(name: str, all_period: bool, mas):
+def add_to_tradings(name: str, all_period: bool, from_date, to_date):
+    mas = loader.download_stock(name, from_date, to_date)
+    del mas[-1]
     for i in range(1, len(mas)):
         session.add(Trading(name_st=name,
                             all_period_st=all_period,
@@ -262,9 +270,6 @@ def actualize():
                 row.till_date = begin_end[1]
                 session.add(row)
                 session.commit()
-
-
-# get_tradings_profit()
 
 
 

@@ -1,7 +1,11 @@
-sqlalchemy
-pymysql
-cryptography
-apimoex
+tkcalendar
+pandas
+psycopg2
 requests
+sqlalchemy
+sqlalchemy-utils
+cryptography
 matplotlib
+apimoex
+yfinance
 openpyxl
