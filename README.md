@@ -148,7 +148,7 @@ python main.py
 
 
 
-Скачанные отчёты будут называться «output_cost.xslx» и «output_profit.xslx». И будут находится в корневой директории приложения.
+Скачанные отчёты будут называться `output_cost.xslx` и `output_profit.xslx`. И будут находится в корневой директории приложения.
 
 
 |![](interface_images/16.png)|
